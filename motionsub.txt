@@ -1,0 +1,72 @@
+import numpy as np
+import cv2
+import imutils
+from scipy import ndimage
+
+
+cap = cv2.VideoCapture('D:\\Docs\\6th sem\\Internship\\dataset\\testv1.mp4')
+
+_, frame = cap.read()
+frame = imutils.rotate_bound(frame, 270)
+
+pt1 = np.float32([[340,375], [771,400], [406,780], [843,695]])
+pt2 = np.float32([[0,0], [600,0], [0,600], [600,600]])
+matrix = cv2.getPerspectiveTransform(pt1, pt2)
+result = cv2.warpPerspective(frame, matrix, (600, 600))
+
+first_gray = cv2.cvtColor(result,cv2.COLOR_BGR2GRAY)
+first_gray = cv2.GaussianBlur(first_gray, (7, 7), 0)
+
+while True:
+    ret1, frame1 = cap.read()
+
+    if not ret1:
+        break
+
+    frame1 = imutils.rotate_bound(frame1, -90)
+
+    pt1 = np.float32([[340, 375], [771, 400], [406, 780], [843, 695]])
+    pt2 = np.float32([[0, 0], [600, 0], [0, 600], [600, 600]])
+    matrix = cv2.getPerspectiveTransform(pt1, pt2)
+    result = cv2.warpPerspective(frame1, matrix, (600, 600))
+
+    gray_frame = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+    gray_frame = cv2.GaussianBlur(gray_frame, (7, 7), 0)
+
+    difference = cv2.absdiff(first_gray, gray_frame)
+
+    ret2, difference = cv2.threshold(difference, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    D = ndimage.distance_transform_edt(difference)
+
+
+    dist = cv2.distanceTransform(difference, cv2.DIST_C, 3)
+    cv2.normalize(dist, dist, 0.0, 1.0, cv2.NORM_MINMAX)
+
+    key = cv2.waitKey(1) & 0xff
+
+# Code to pause the frames and resume
+    if key == ord('p'):
+
+        while True:
+
+            key2 = cv2.waitKey(1) or 0xff
+            cv2.imshow("EDT", dist)
+            cv2.imshow('IMG', difference)
+
+            if key2 == ord('p'):
+                break
+
+    cv2.imshow("EDT", dist)
+    cv2.imshow('IMG', difference)
+
+    if key == ord("q"):
+        break
+
+    # cv2.imshow("EDT", dist)
+    # cv2.imshow('IMG', difference)
+
+    # if cv2.waitKey(1) == ord('q'):
+    #     break
+
+cv2.destroyAllWindows()
